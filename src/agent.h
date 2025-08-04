@@ -1,69 +1,29 @@
+// gurong  2025-7-27
 #pragma once
-
 #include <string>
-#include <memory>
 #include <vector>
-#include <functional>
-#include <any>
 
-namespace openai_agents {
-
-// Forward declarations
-class RunContextWrapper;
-class Usage;
-
-/**
- * Base class for all agent implementations
- */
-class AgentBase {
+namespace agents {
+class Agent {
 public:
-    virtual ~AgentBase() = default;
-    
-    /**
-     * Run the agent with the given input
-     */
-    virtual std::any run(const std::any& input) = 0;
-    
-    /**
-     * Get the agent's name
-     */
-    virtual std::string get_name() const = 0;
-};
+    virtual ~Agent() = default;
 
-/**
- * Generic Agent class template
- */
-template<typename OutputType>
-class Agent : public AgentBase {
-public:
-    Agent(const std::string& name) : name_(name) {}
-    
-    std::string get_name() const override { return name_; }
-    
-    /**
-     * Run the agent and return typed output
-     */
-    virtual OutputType run_typed(const std::any& input) = 0;
-    
-    std::any run(const std::any& input) override {
-        return run_typed(input);
-    }
+    Agent(const std::string& name,
+           const std::string& instructions = "你是一个牛逼的AI助手，帮助用户完成任务。",
+           const std::string& handoff_description = "")
+        : name_(name), handoff_description_(handoff_description), instructions_(instructions) {}
 
-private:
+    virtual void run(const std::string& input);
+
+    virtual void stream(std::string& output, const std::string& delta) = 0;
+
+    virtual void set_sub_agents(std::vector<Agent*>& sub_agents) = 0;
+protected:
     std::string name_;
+    std::string handoff_description_;
+    std::string instructions_;
+
+    std::vector<Agent*> sub_agents_;
 };
 
-/**
- * Function signature for tools to final output conversion
- */
-struct ToolsToFinalOutputResult {
-    bool is_final_output;
-    std::any final_output;
-};
-
-using ToolsToFinalOutputFunction = std::function<ToolsToFinalOutputResult(
-    std::shared_ptr<RunContextWrapper>, 
-    const std::vector<std::any>&
-)>;
-
-} // namespace openai_agents
+} // namespace agents
